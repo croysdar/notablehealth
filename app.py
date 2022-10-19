@@ -40,6 +40,8 @@ def count_appts(d_id, date_time):
     count = 0
     for aid in appointments:
         appointment = appointments[aid]
+        if 'deleted' in appointment and appointment['deleted']:
+            continue
         if str(appointment['doctor']) != d_id:
             continue
         if appointment['datetime'] == date_time:
@@ -53,8 +55,7 @@ def route_doctors():
     # Get a list of all doctors
     return {'doctors': doctors}, 200
 
-def dr_exists(request):
-    doctor_id = request.args.get('doctor_id')
+def dr_exists(doctor_id):
     if not doctor_id:
         return False
     # check if doctor exists
@@ -68,34 +69,38 @@ def route_appointments():
         aid = request.args.get('appointment_id')
         if aid not in appointments:
             return 'Appointment with that ID does not exist', 404
-        del appointments[aid]
+        appointments[aid]['deleted'] = True
         return "Success", 200
 
     if request.method == 'GET':
-        if not dr_exists(request):
+        doctor_id = request.args.get('doctor_id')
+        if not dr_exists(doctor_id):
             return 'Doctor with that ID does not exist', 404
         
         date_string = request.args.get('datetime')
         date_time = datetime.datetime.strptime(date_string, "%Y-%m-%d")
         end_of_day = date_time + datetime.timedelta(days=1)
 
-        appointment_matches = []
+        appointment_matches = {}
 
         # ideally this would done through a database query rather than a loop
         for aid in appointments:
             appointment = appointments[aid]
+            if 'deleted' in appointment and appointment['deleted']:
+                continue
             if str(appointment['doctor']) != doctor_id:
                 continue
             if appointment['datetime'] <= date_time:
                 continue
             if appointment['datetime'] >= end_of_day:
                 continue
-            appointment_matches.append(appointment)
+            appointment_matches[aid] = appointment
 
         return {'appointments': appointment_matches}, 200
 
     if request.method == 'POST':
-        if not dr_exists(request):
+        doctor_id = request.args.get('doctor_id')
+        if not dr_exists(doctor_id):
             return 'Doctor with that ID does not exist', 404
 
         date_string = request.args.get('datetime')
