@@ -78,7 +78,11 @@ def route_appointments():
             return 'Doctor with that ID does not exist', 404
         
         date_string = request.args.get('datetime')
-        date_time = datetime.datetime.strptime(date_string, "%Y-%m-%d")
+        try:
+            date_time = datetime.datetime.strptime(date_string, "%Y-%m-%d")
+        except ValueError:
+            return "'datetime' must be in format YYYY-MM-DD", 400
+
         end_of_day = date_time + datetime.timedelta(days=1)
 
         appointment_matches = {}
@@ -104,7 +108,11 @@ def route_appointments():
             return 'Doctor with that ID does not exist', 404
 
         date_string = request.args.get('datetime')
-        date_time = datetime.datetime.strptime(date_string, "%Y-%m-%d %I:%M %p")
+        try:
+            date_time = datetime.datetime.strptime(date_string, "%Y-%m-%d %I:%M %p")
+        except ValueError:
+            return "'datetime' must be in format YYYY-MM-DD HH:MM am/pm", 400
+
         if date_time.minute not in [0,15,30,45]:
             return 'Appointment must be on 15 minute interval', 400
         
